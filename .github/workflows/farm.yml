@@ -3,11 +3,11 @@ on:
   workflow_dispatch:
     inputs:
       network:
-        description: 'Testnet to farm (all, scroll, base, monad)'
+        description: 'Testnet (all, scroll, base, monad)'
         required: true
         default: 'all'
 jobs:
-  farm:
+  generate:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -15,15 +15,25 @@ jobs:
         with:
           node-version: 20
       - run: npm install
-      - run: |
-          case "${{ github.event.inputs.network }}" in
-            scroll) node scroll.js ;;
-            base)   node base.js ;;
-            monad)  node monad.js ;;
-            *)      bash farm-all.sh ;;
-          esac
+      - name: Generate wallets
+        run: node -e "
+          const {ethers} = require('ethers');
+          const fs = require('fs');
+          const networks = ['scroll','base','monad'];
+          const count = 20;
+          fs.mkdirSync('wallets', {recursive: true});
+          for(const net of networks) {
+            const wallets = [];
+            for(let i=0;i<count;i++) {
+              const w = ethers.Wallet.createRandom();
+              wallets.push({address: w.address, privateKey: w.privateKey});
+            }
+            fs.writeFileSync('wallets/' + net + '-wallets.json', JSON.stringify(wallets, null, 2));
+            console.log('Generated ' + count + ' wallets for ' + net);
+          }
+          console.log('Done! All wallets saved.');
+        "
       - uses: actions/upload-artifact@v4
-        if: always()
         with:
           name: wallets
           path: wallets/
