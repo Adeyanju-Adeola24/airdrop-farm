@@ -1,0 +1,30 @@
+name: Test RPC Connectivity
+on: workflow_dispatch
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install
+      - run: node -e "
+          const {ethers} = require('ethers');
+          const networks = [
+            {name:'Scroll', url:'https://sepolia-rpc.scroll.io'},
+            {name:'Base', url:'https://sepolia.base.org'},
+            {name:'Monad', url:'https://testnet-rpc.monad.xyz'},
+          ];
+          (async() => {
+            for(const n of networks) {
+              try {
+                const p = new ethers.JsonRpcProvider(n.url, undefined, {fetchOptions:{timeout:10000}});
+                const bn = await p.getBlockNumber();
+                console.log('OK ' + n.name + ' - block ' + bn);
+              } catch(e) {
+                console.log('FAIL ' + n.name + ' - ' + e.message.slice(0,80));
+              }
+            }
+          })();
+        "
