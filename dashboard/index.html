@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Airdrop Farm Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/ethers@6/dist/ethers.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #0a0a0f;
+    color: #e0e0e0;
+    min-height: 100vh;
+  }
+  header {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    padding: 2rem;
+    text-align: center;
+    border-bottom: 1px solid #1e3a5f;
+  }
+  header h1 { font-size: 2rem; background: linear-gradient(90deg, #00d4ff, #7b2ff7); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  header p { color: #8899aa; margin-top: 0.5rem; }
+  .container { max-width: 1400px; margin: 0 auto; padding: 1.5rem; }
+  .stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+  .stat-card {
+    background: #111122;
+    border: 1px solid #1e3a5f;
+    border-radius: 12px;
+    padding: 1.25rem;
+    text-align: center;
+  }
+  .stat-card .value { font-size: 1.75rem; font-weight: 700; color: #00d4ff; }
+  .stat-card .label { font-size: 0.8rem; color: #667788; margin-top: 0.25rem; text-transform: uppercase; letter-spacing: 0.05em; }
+  .network-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 1.5rem; }
+  .network-card {
+    background: #111122;
+    border: 1px solid #1e3a5f;
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .network-header {
+    padding: 1rem 1.25rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #1e3a5f;
+  }
+  .network-header h2 { font-size: 1.1rem; }
+  .network-header .badge {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    background: #1a3a2a;
+    color: #4ade80;
+  }
+  .network-header .badge.waiting { background: #3a2a1a; color: #fbbf24; }
+  .wallet-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.6rem 1.25rem;
+    border-bottom: 1px solid #0a0a18;
+    font-size: 0.85rem;
+    font-family: 'Courier New', monospace;
+  }
+  .wallet-row:last-child { border-bottom: none; }
+  .wallet-row .addr { color: #8899bb; }
+  .wallet-row .bal { color: #4ade80; }
+  .wallet-row .bal.loading { color: #fbbf24; }
+  .wallet-row .bal.error { color: #f87171; }
+  .wallet-row .index { color: #555566; width: 2rem; }
+  .refresh-btn {
+    background: #00d4ff;
+    color: #000;
+    border: none;
+    padding: 0.5rem 1.25rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    margin-top: 1.5rem;
+  }
+  .refresh-btn:hover { background: #33ddff; }
+  .footer { text-align: center; padding: 2rem; color: #445566; font-size: 0.8rem; }
+  .loading-dots::after { content: ''; animation: dots 1.5s steps(4, end) infinite; }
+  @keyframes dots { 0% { content: ''; } 25% { content: '.'; } 50% { content: '..'; } 75% { content: '...'; } }
+  .error-msg { color: #f87171; text-align: center; padding: 2rem; }
+  @media (max-width: 600px) {
+    .network-grid { grid-template-columns: 1fr; }
+    .wallet-row { font-size: 0.75rem; flex-wrap: wrap; gap: 0.25rem; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Airdrop Farm Dashboard</h1>
+  <p>Monitor your testnet wallets across Scroll, Base, and Monad</p>
+</header>
+<div class="container">
+  <div class="stats-row" id="statsRow">
+    <div class="stat-card"><div class="value" id="totalWallets">0</div><div class="label">Total Wallets</div></div>
+    <div class="stat-card"><div class="value" id="totalWithBalance">0</div><div class="label">With Balance</div></div>
+    <div class="stat-card"><div class="value" id="totalBalance">0.00</div><div class="label">Total ETH</div></div>
+    <div class="stat-card"><div class="value" id="networksActive">0/3</div><div class="label">Networks Active</div></div>
+  </div>
+
+  <div class="network-grid" id="networkGrid"></div>
+
+  <div style="text-align:center; margin-top: 1.5rem;">
+    <button class="refresh-btn" onclick="refreshAll()">Refresh All Balances</button>
+  </div>
+</div>
+<div class="footer">
+  Airdrop Farm &mdash; Wallets are generated client-side. Private keys never leave your device.
+</div>
+
+<script>
+const NETWORKS = [
+  { id: 'scroll',  name: 'Scroll',  rpc: 'https://sepolia-rpc.scroll.io',   chainId: 534351, color: '#00d4ff', explorer: 'https://sepolia.scrollscan.com' },
+  { id: 'base',    name: 'Base',    rpc: 'https://sepolia.base.org',          chainId: 84532,  color: '#0052ff', explorer: 'https://sepolia.basescan.org' },
+  { id: 'monad',   name: 'Monad',   rpc: 'https://testnet-rpc.monad.xyz',    chainId: 10143,  color: '#7b2ff7', explorer: 'https://testnet.monadexplorer.com' },
+];
+
+const WALLET_COUNT = 20;
+
+// Derive deterministic wallets from a seed + network id
+function deriveWallets(seed, networkId, count) {
+  const wallets = [];
+  for (let i = 0; i < count; i++) {
+    const hash = ethers.keccak256(ethers.toUtf8Bytes(seed + networkId + i));
+    const privateKey = hash;
+    const wallet = new ethers.Wallet(privateKey);
+    wallets.push({ address: wallet.address, privateKey: wallet.privateKey, index: i + 1 });
+  }
+  return wallets;
+}
+
+async function fetchBalance(rpcUrl, address) {
+  const provider = new ethers.JsonRpcProvider(rpcUrl);
+  try {
+    const balance = await provider.getBalance(address);
+    return { balance: ethers.formatEther(balance), raw: balance };
+  } catch (e) {
+    return { balance: '0.0', raw: 0n, error: e.message };
+  }
+}
+
+function renderNetwork(network, wallets) {
+  const card = document.createElement('div');
+  card.className = 'network-card';
+  card.id = `card-${network.id}`;
+
+  card.innerHTML = `
+    <div class="network-header">
+      <h2 style="color:${network.color}">${network.name}</h2>
+      <span class="badge" id="badge-${network.id}">Loading...</span>
+    </div>
+    <div id="wallets-${network.id}">
+      ${wallets.map((w, i) => `
+        <div class="wallet-row" id="row-${network.id}-${i}">
+          <span class="index">#${i + 1}</span>
+          <span class="addr">${w.address.slice(0, 6)}...${w.address.slice(-4)}</span>
+          <span class="bal loading" id="bal-${network.id}-${i}">--</span>
+        </div>
+      `).join('')}
+    </div>
+  `;
+  return card;
+}
+
+async function refreshNetwork(network, wallets) {
+  const badge = document.getElementById(`badge-${network.id}`);
+  badge.textContent = 'Checking...';
+  badge.className = 'badge waiting';
+
+  let activeCount = 0;
+  let totalBalance = 0n;
+
+  for (let i = 0; i < wallets.length; i++) {
+    const balEl = document.getElementById(`bal-${network.id}-${i}`);
+    balEl.textContent = '...';
+    balEl.className = 'bal loading';
+
+    const result = await fetchBalance(network.rpc, wallets[i].address);
+    if (result.error) {
+      balEl.textContent = 'ERR';
+      balEl.className = 'bal error';
+    } else {
+      balEl.textContent = `${parseFloat(result.balance).toFixed(5)} ETH`;
+      balEl.className = 'bal';
+      if (result.raw > 0n) activeCount++;
+      totalBalance += result.raw;
+    }
+  }
+
+  badge.textContent = `${activeCount}/${wallets.length} active`;
+  badge.className = activeCount > 0 ? 'badge' : 'badge waiting';
+
+  return { activeCount, totalBalance };
+}
+
+async function updateStats(allResults) {
+  let totalWithBal = 0;
+  let totalBal = 0n;
+  let activeNetworks = 0;
+
+  for (const r of allResults) {
+    totalWithBal += r.activeCount;
+    totalBal += r.totalBalance;
+    if (r.activeCount > 0) activeNetworks++;
+  }
+
+  document.getElementById('totalWallets').textContent = WALLET_COUNT * NETWORKS.length;
+  document.getElementById('totalWithBalance').textContent = totalWithBal;
+  document.getElementById('totalBalance').textContent = `${parseFloat(ethers.formatEther(totalBal)).toFixed(4)}`;
+  document.getElementById('networksActive').textContent = `${activeNetworks}/${NETWORKS.length}`;
+}
+
+async function refreshAll() {
+  const grid = document.getElementById('networkGrid');
+  grid.innerHTML = '<p style="text-align:center;padding:2rem;color:#667788;">Loading wallets and fetching balances...</p>';
+
+  const results = [];
+  for (const network of NETWORKS) {
+    const wallets = deriveWallets('airdrop-farm-seed', network.id, WALLET_COUNT);
+    const card = renderNetwork(network, wallets);
+    results.push({ network, wallets, card });
+  }
+
+  grid.innerHTML = '';
+  for (const r of results) {
+    grid.appendChild(r.card);
+  }
+
+  // Refresh balances sequentially to avoid rate limits
+  const stats = [];
+  for (const r of results) {
+    const result = await refreshNetwork(r.network, r.wallets);
+    stats.push(result);
+  }
+  await updateStats(stats);
+}
+
+refreshAll();
+</script>
+</body>
+</html>
