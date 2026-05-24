@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Airdrop Farm Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/ethers@6/dist/ethers.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #08080e;
+    color: #e0e0e0;
+    min-height: 100vh;
+  }
+  header {
+    background: linear-gradient(135deg, #0f0f23 0%, #1a1a3e 50%, #0a1628 100%);
+    padding: 1.5rem 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #1a2a4a;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+  header h1 { font-size: 1.5rem; background: linear-gradient(90deg, #00d4ff, #7b2ff7); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  header p { color: #667; font-size: 0.85rem; }
+
+  .tabs {
+    display: flex;
+    gap: 0;
+    background: #0f0f1a;
+    border-bottom: 1px solid #1a2a4a;
+    padding: 0 1.5rem;
+    overflow-x: auto;
+  }
+  .tab {
+    padding: 0.75rem 1.5rem;
+    cursor: pointer;
+    color: #667;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+    white-space: nowrap;
+    font-size: 0.9rem;
+  }
+  .tab:hover { color: #aaa; }
+  .tab.active { color: #00d4ff; border-bottom-color: #00d4ff; }
+
+  .container { max-width: 1400px; margin: 0 auto; padding: 1.5rem; }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  .stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+  .stat-card {
+    background: #0e0e1e;
+    border: 1px solid #1a2a4a;
+    border-radius: 12px;
+    padding: 1.25rem;
+    text-align: center;
+  }
+  .stat-card .value { font-size: 1.6rem; font-weight: 700; color: #00d4ff; }
+  .stat-card .label { font-size: 0.75rem; color: #556; margin-top: 0.25rem; text-transform: uppercase; letter-spacing: 0.08em; }
+
+  .network-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap: 1.25rem; }
+  .network-card {
+    background: #0e0e1e;
+    border: 1px solid #1a2a4a;
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .network-header {
+    padding: 0.85rem 1.25rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #1a2a4a;
+  }
+  .network-header h2 { font-size: 1rem; }
+  .badge {
+    font-size: 0.7rem;
+    padding: 0.2rem 0.6rem;
+    border-radius: 20px;
+    background: #1a2a1a;
+    color: #4ade80;
+  }
+  .badge.waiting { background: #2a1a1a; color: #fbbf24; }
+  .badge.idle { background: #1a1a2a; color: #667; }
+
+  .wallet-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 1.25rem;
+    border-bottom: 1px solid #080810;
+    font-size: 0.82rem;
+    font-family: 'SF Mono', 'Courier New', monospace;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .wallet-row:hover { background: #12122a; }
+  .wallet-row:last-child { border-bottom: none; }
+  .wallet-row .addr { color: #78a; }
+  .wallet-row .bal { color: #4ade80; }
+  .wallet-row .bal.loading { color: #fbbf24; }
+  .wallet-row .bal.error { color: #f87171; }
+  .wallet-row .index { color: #334; width: 1.5rem; font-size: 0.7rem; }
+
+  .btn {
+    background: #00d4ff;
+    color: #000;
+    border: none;
+    padding: 0.5rem 1.25rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.85rem;
+    transition: all 0.2s;
+  }
+  .btn:hover { background: #33ddff; transform: translateY(-1px); }
+  .btn-sm { padding: 0.35rem 0.85rem; font-size: 0.75rem; }
+  .btn-outline {
+    background: transparent;
+    border: 1px solid #1a2a4a;
+    color: #78a;
+  }
+  .btn-outline:hover { border-color: #00d4ff; color: #00d4ff; background: rgba(0,212,255,0.05); }
+  .btn-danger { background: #f87171; }
+  .btn-danger:hover { background: #fc9; }
+
+  .upload-zone {
+    border: 2px dashed #1a2a4a;
+    border-radius: 12px;
+    padding: 3rem 2rem;
+    text-align: center;
+    transition: all 0.3s;
+    cursor: pointer;
+  }
+  .upload-zone:hover, .upload-zone.dragover { border-color: #00d4ff; background: rgba(0,212,255,0.03); }
+  .upload-zone .icon { font-size: 2.5rem; margin-bottom: 1rem; }
+  .upload-zone p { color: #667; font-size: 0.9rem; }
+  .upload-zone .hint { font-size: 0.75rem; color: #445; margin-top: 0.5rem; }
+
+  .faucet-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.25rem; }
+  .faucet-card {
+    background: #0e0e1e;
+    border: 1px solid #1a2a4a;
+    border-radius: 12px;
+    padding: 1.5rem;
+  }
+  .faucet-card h3 { margin-bottom: 0.5rem; }
+  .faucet-card p { color: #667; font-size: 0.85rem; margin-bottom: 0.75rem; }
+  .faucet-card .faucet-link {
+    display: inline-block;
+    color: #00d4ff;
+    word-break: break-all;
+    font-size: 0.85rem;
+  }
+  .faucet-card .chain-id { color: #445; font-size: 0.75rem; font-family: monospace; margin-top: 0.25rem; }
+
+  .wallet-list { margin-top: 1rem; }
+  .wallet-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    background: #0e0e1e;
+    border: 1px solid #1a2a4a;
+    border-radius: 8px;
+    margin-bottom: 0.5rem;
+    font-family: monospace;
+    font-size: 0.82rem;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  .wallet-item .waddr { color: #78a; }
+  .wallet-item .network-tag {
+    font-size: 0.65rem;
+    padding: 0.15rem 0.45rem;
+    border-radius: 4px;
+    background: #1a2a4a;
+    color: #78a;
+  }
+  .wallet-item .actions { display: flex; gap: 0.5rem; }
+  .wallet-item .key-display {
+    color: #445;
+    font-size: 0.7rem;
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .toast {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    background: #1a2a1a;
+    color: #4ade80;
+    padding: 1rem 1.5rem;
+    border-radius: 8px;
+    border: 1px solid #2a4a2a;
+    font-size: 0.85rem;
+    display: none;
+    z-index: 100;
+    animation: slideIn 0.3s ease;
+  }
+  @keyframes slideIn { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+  .qr-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.8);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 200;
+  }
+  .qr-overlay.show { display: flex; }
+  .qr-box {
+    background: #0e0e1e;
+    border: 1px solid #1a2a4a;
+    border-radius: 12px;
+    padding: 2rem;
+    text-align: center;
+    max-width: 90vw;
+  }
+  .qr-box img { width: 200px; height: 200px; margin: 1rem 0; }
+  .qr-box .addr { color: #78a; font-family: monospace; font-size: 0.8rem; word-break: break-all; }
+  .qr-box .close {
+    margin-top: 1rem;
+    padding: 0.5rem 1.5rem;
+    background: #1a2a4a;
+    border: none;
+    color: #78a;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+
+  .scroll-top-btn {
+    position: fixed;
+    bottom: 1.5rem;
+    left: 1.5rem;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #1a2a4a;
+    border: 1px solid #2a3a5a;
+    color: #78a;
+    cursor: pointer;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    z-index: 50;
+    transition: all 0.2s;
+  }
+  .scroll-top-btn:hover { background: #2a3a5a; color: #00d4ff; }
+
+  .empty-state { text-align: center; padding: 3rem 1rem; color: #445; }
+  .empty-state .big-icon { font-size: 3rem; margin-bottom: 1rem; }
+
+  .select-all-bar {
+    display: flex;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    background: #0e0e1e;
+    border: 1px solid #1a2a4a;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .select-all-bar label { color: #78a; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; }
+  .select-all-bar input[type="checkbox"] { accent-color: #00d4ff; width: 16px; height: 16px; }
+
+  .clear-btn { background: none; border: none; color: #f87171; cursor: pointer; font-size: 0.75rem; padding: 0.25rem 0.5rem; }
+  .clear-btn:hover { text-decoration: underline; }
+
+  @media (max-width: 600px) {
+    header { padding: 1rem; flex-direction: column; text-align: center; }
+    .tabs { padding: 0 0.5rem; }
+    .tab { padding: 0.6rem 0.85rem; font-size: 0.8rem; }
+    .network-grid { grid-template-columns: 1fr; }
+    .wallet-row { font-size: 0.7rem; }
+    .stats-row { grid-template-columns: repeat(2, 1fr); }
+    .faucet-grid { grid-template-columns: 1fr; }
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: #08080e; }
+  ::-webkit-scrollbar-thumb { background: #1a2a4a; border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: #2a3a5a; }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>Airdrop Farm Dashboard</h1>
+    <p>Monitor and manage your testnet wallets</p>
+  </div>
+  <div>
+    <button class="btn btn-sm btn-outline" onclick="refreshAll()" id="refreshBtn">Refresh All</button>
+  </div>
+</header>
+
+<div class="tabs" id="tabs">
+  <div class="tab active" data-tab="dashboard">Dashboard</div>
+  <div class="tab" data-tab="wallets">Wallets</div>
+  <div class="tab" data-tab="faucets">Faucets & Info</div>
+  <div class="tab" data-tab="export">Export</div>
+</div>
+
+<div class="container">
+
+<!-- ============ TAB 1: Dashboard ============ -->
+<div class="tab-content active" id="tab-dashboard">
+  <div class="stats-row" id="statsRow">
+    <div class="stat-card"><div class="value" id="totalWallets">0</div><div class="label">Total Wallets</div></div>
+    <div class="stat-card"><div class="value" id="totalWithBalance">0</div><div class="label">With Balance</div></div>
+    <div class="stat-card"><div class="value" id="totalBalance">0.00</div><div class="label">Total ETH</div></div>
+    <div class="stat-card"><div class="value" id="networksActive">0/3</div><div class="label">Networks Active</div></div>
+  </div>
+  <div class="network-grid" id="networkGrid">
+    <div class="empty-state" style="grid-column:1/-1">
+      <p>No wallets loaded. Go to the <strong>Wallets</strong> tab to upload your wallet files.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ============ TAB 2: Wallets ============ -->
+<div class="tab-content" id="tab-wallets">
+  <div class="upload-zone" id="uploadZone">
+    <div class="icon">&#128194;</div>
+    <p><strong>Drop your wallet JSON files here</strong></p>
+    <p>or click to select files</p>
+    <div class="hint">Files: scroll-wallets.json, base-wallets.json, monad-wallets.json &mdash; Private keys stay on YOUR device, never uploaded</div>
+  </div>
+  <input type="file" id="fileInput" accept=".json" multiple style="display:none">
+
+  <div id="storedWallets" style="margin-top: 2rem;"></div>
+
+  <div style="text-align:center; margin-top: 1rem;">
+    <button class="btn btn-sm btn-danger" onclick="clearAllData()">Clear All Wallet Data</button>
+  </div>
+</div>
+
+<!-- ============ TAB 3: Faucets ============ -->
+<div class="tab-content" id="tab-faucets">
+  <div class="faucet-grid">
+    <div class="faucet-card">
+      <h3 style="color:#00d4ff">Scroll Sepolia</h3>
+      <p>zkEVM Layer 2 testnet with confirmed airdrop.</p>
+      <div class="chain-id">Chain ID: 534351 | RPC: sepolia-rpc.scroll.io</div>
+      <a class="faucet-link" href="https://sepoliafaucet.com" target="_blank" rel="noopener">sepoliafaucet.com</a><br>
+      <a class="faucet-link" href="https://scroll.io/faucet" target="_blank" rel="noopener">scroll.io/faucet</a><br>
+      <a class="faucet-link" href="https://sepolia.scrollscan.com" target="_blank" rel="noopener">Block Explorer</a>
+    </div>
+    <div class="faucet-card">
+      <h3 style="color:#0052ff">Base Sepolia</h3>
+      <p>Coinbase L2 testnet, high activity and potential airdrop.</p>
+      <div class="chain-id">Chain ID: 84532 | RPC: sepolia.base.org</div>
+      <a class="faucet-link" href="https://docs.base.org/docs/faucet/" target="_blank" rel="noopener">Base Faucet Guide</a><br>
+      <a class="faucet-link" href="https://www.alchemy.com/faucets/base-sepolia" target="_blank" rel="noopener">Alchemy Base Faucet</a><br>
+      <a class="faucet-link" href="https://sepolia.basescan.org" target="_blank" rel="noopener">Block Explorer</a>
+    </div>
+    <div class="faucet-card">
+      <h3 style="color:#7b2ff7">Monad Testnet</h3>
+      <p>New L1 with proof-of-liquid-staking, high potential.</p>
+      <div class="chain-id">Chain ID: 10143 | RPC: testnet-rpc.monad.xyz</div>
+      <a class="faucet-link" href="https://faucet.monad.xyz" target="_blank" rel="noopener">faucet.monad.xyz</a><br>
+      <a class="faucet-link" href="https://testnet.monadexplorer.com" target="_blank" rel="noopener">Block Explorer</a>
+    </div>
+  </div>
+
+  <div style="margin-top: 2rem; background: #0e0e1e; border: 1px solid #1a2a4a; border-radius: 12px; padding: 1.5rem;">
+    <h3 style="margin-bottom: 0.75rem;">Tips for Getting Test Tokens</h3>
+    <ul style="color: #667; font-size: 0.85rem; line-height: 1.8; padding-left: 1.25rem;">
+      <li>Most faucets require a <strong>Twitter/X account</strong> or <strong>CAPTCHA</strong> — you may need to visit them manually</li>
+      <li>You can request from multiple faucets to increase your test ETH balance</li>
+      <li>Some faucets limit requests to once per day per IP/address</li>
+      <li>Use a VPN if you hit rate limits</li>
+      <li>Bridge ETH from Sepolia to Scroll Sepolia via the Scroll bridge</li>
+      <li>Base Sepolia ETH can be obtained from the Base bridge or public faucets</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ============ TAB 4: Export ============ -->
+<div class="tab-content" id="tab-export">
+  <div id="exportContent">
+    <div class="empty-state">
+      <div class="big-icon">&#128230;</div>
+      <p>No wallets loaded. Upload wallets first in the <strong>Wallets</strong> tab.</p>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div class="qr-overlay" id="qrOverlay" onclick="closeQR()">
+  <div class="qr-box" onclick="event.stopPropagation()">
+    <h3>Wallet Address</h3>
+    <div id="qrCode"></div>
+    <div class="addr" id="qrAddress"></div>
+    <button class="close" onclick="closeQR()">Close</button>
+  </div>
+</div>
+
+<button class="scroll-top-btn" id="scrollTopBtn" onclick="window.scrollTo({top:0,behavior:'smooth'})">&#8593;</button>
+
+<script>
+// ========== CONFIG ==========
+const NETWORKS = [
+  { id: 'scroll',  name: 'Scroll',  rpc: 'https://sepolia-rpc.scroll.io',   chainId: 534351, color: '#00d4ff', explorer: 'https://sepolia.scrollscan.com/address/' },
+  { id: 'base',    name: 'Base',    rpc: 'https://sepolia.base.org',          chainId: 84532,  color: '#0052ff', explorer: 'https://sepolia.basescan.org/address/' },
+  { id: 'monad',   name: 'Monad',   rpc: 'https://testnet-rpc.monad.xyz',    chainId: 10143,  color: '#7b2ff7', explorer: 'https://testnet.monadexplorer.com/address/' },
+];
+
+// ========== STATE ==========
+let allWallets = {}; // { scroll: [{address, privateKey}], ... }
+const LS_KEY = 'airdrop_farm_wallets';
+
+function loadFromStorage() {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (raw) allWallets = JSON.parse(raw);
+  } catch(e) {}
+}
+
+function saveToStorage() {
+  localStorage.setItem(LS_KEY, JSON.stringify(allWallets));
+}
+
+// ========== TOAST ==========
+function showToast(msg, isError) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.background = isError ? '#2a1a1a' : '#1a2a1a';
+  t.style.color = isError ? '#f87171' : '#4ade80';
+  t.style.borderColor = isError ? '#4a2a2a' : '#2a4a2a';
+  t.style.display = 'block';
+  setTimeout(() => t.style.display = 'none', 3000);
+}
+
+// ========== QR CODE ==========
+function showQR(address) {
+  document.getElementById('qrAddress').textContent = address;
+  // Use a simple QR code via Google Charts API (free, no API key)
+  const encoded = encodeURIComponent(address);
+  document.getElementById('qrCode').innerHTML = `<img src="https://chart.googleapis.com/chart?cht=qr&chs=200x200&chl=${encoded}" alt="QR Code" style="border-radius:8px">`;
+  document.getElementById('qrOverlay').classList.add('show');
+}
+
+function closeQR() {
+  document.getElementById('qrOverlay').classList.remove('show');
+}
+
+// ========== TAB SYSTEM ==========
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+    if (tab.dataset.tab === 'export') renderExport();
+  });
+});
+
+// ========== FILE UPLOAD ==========
+const uploadZone = document.getElementById('uploadZone');
+const fileInput = document.getElementById('fileInput');
+
+uploadZone.addEventListener('click', () => fileInput.click());
+
+uploadZone.addEventListener('dragover', (e) => {
+  e.preventDefault();
+  uploadZone.classList.add('dragover');
+});
+uploadZone.addEventListener('dragleave', () => {
+  uploadZone.classList.remove('dragover');
+});
+uploadZone.addEventListener('drop', (e) => {
+  e.preventDefault();
+  uploadZone.classList.remove('dragover');
+  handleFiles(e.dataTransfer.files);
+});
+
+fileInput.addEventListener('change', () => {
+  handleFiles(fileInput.files);
+  fileInput.value = '';
+});
+
+function handleFiles(files) {
+  for (const file of files) {
+    if (!file.name.endsWith('.json')) {
+      showToast(`Skipped ${file.name} — not a JSON file`, true);
+      continue;
+    }
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = JSON.parse(e.target.result);
+        if (!Array.isArray(data) || !data.length || !data[0].address) {
+          showToast(`Invalid wallet format in ${file.name}`, true);
+          return;
+        }
+        // Determine network from filename
+        let network = null;
+        for (const n of NETWORKS) {
+          if (file.name.toLowerCase().includes(n.id)) {
+            network = n.id;
+            break;
+          }
+        }
+        if (!network) {
+          showToast(`Could not determine network from filename: ${file.name}`, true);
+          return;
+        }
+        allWallets[network] = data;
+        saveToStorage();
+        showToast(`Loaded ${data.length} wallets from ${file.name}`);
+        renderStoredWallets();
+      } catch(err) {
+        showToast(`Error parsing ${file.name}: ${err.message}`, true);
+      }
+    };
+    reader.readAsText(file);
+  }
+}
+
+// ========== RENDER STORED WALLETS ==========
+function renderStoredWallets() {
+  const container = document.getElementById('storedWallets');
+  const hasAny = Object.values(allWallets).some(w => w && w.length > 0);
+
+  if (!hasAny) {
+    container.innerHTML = `<div class="empty-state"><p style="color:#445">No wallets stored yet. Upload your wallet JSON files above.</p></div>`;
+    return;
+  }
+
+  let html = '<h3 style="margin-bottom:1rem;color:#78a">Stored Wallets</h3>';
+  for (const network of NETWORKS) {
+    const wallets = allWallets[network.id];
+    if (!wallets || !wallets.length) continue;
+
+    html += `<div class="network-card" style="margin-bottom:1rem">
+      <div class="network-header">
+        <h2 style="color:${network.color}">${network.name}</h2>
+        <span class="badge">${wallets.length} wallets</span>
+      </div>`;
+    for (let i = 0; i < Math.min(wallets.length, 20); i++) {
+      const w = wallets[i];
+      const pkShort = w.privateKey.slice(0, 10) + '...' + w.privateKey.slice(-4);
+      html += `<div class="wallet-row" onclick="showQR('${w.address}')" title="Click for QR code">
+        <span class="index">#${i+1}</span>
+        <span class="addr">${w.address.slice(0,6)}...${w.address.slice(-4)}</span>
+        <span class="key-display">${pkShort}</span>
+        <span style="font-size:0.7rem;color:#445">QR</span>
+      </div>`;
+    }
+    if (wallets.length > 20) {
+      html += `<div class="wallet-row" style="color:#445;justify-content:center;font-size:0.75rem">... and ${wallets.length - 20} more</div>`;
+    }
+    html += '</div>';
+  }
+  container.innerHTML = html;
+}
+
+// ========== CLEAR DATA ==========
+function clearAllData() {
+  if (confirm('Clear ALL wallet data? This cannot be undone.')) {
+    allWallets = {};
+    localStorage.removeItem(LS_KEY);
+    renderStoredWallets();
+    renderExport();
+    document.getElementById('networkGrid').innerHTML = '<div class="empty-state" style="grid-column:1/-1"><p>No wallets loaded. Go to the <strong>Wallets</strong> tab to upload your wallet files.</p></div>';
+    document.getElementById('totalWallets').textContent = '0';
+    document.getElementById('totalWithBalance').textContent = '0';
+    document.getElementById('totalBalance').textContent = '0.00';
+    document.getElementById('networksActive').textContent = '0/3';
+    showToast('All wallet data cleared');
+  }
+}
+
+// ========== BALANCE FETCHING ==========
+async function fetchBalance(rpcUrl, address) {
+  const provider = new ethers.JsonRpcProvider(rpcUrl);
+  try {
+    const balance = await provider.getBalance(address);
+    return { balance: ethers.formatEther(balance), raw: balance };
+  } catch (e) {
+    return { balance: '0.0', raw: 0n, error: e.message };
+  }
+}
+
+async function refreshNetwork(network) {
+  const wallets = allWallets[network.id];
+  if (!wallets || !wallets.length) return null;
+
+  const badge = document.getElementById(`badge-${network.id}`);
+  badge.textContent = 'Checking...';
+  badge.className = 'badge waiting';
+
+  let activeCount = 0;
+  let totalBalance = 0n;
+
+  for (let i = 0; i < wallets.length; i++) {
+    const balEl = document.getElementById(`bal-${network.id}-${i}`);
+    if (!balEl) continue;
+    balEl.textContent = '...';
+    balEl.className = 'bal loading';
+
+    const result = await fetchBalance(network.rpc, wallets[i].address);
+    if (result.error) {
+      balEl.textContent = 'ERR';
+      balEl.className = 'bal error';
+    } else {
+      const balNum = parseFloat(result.balance);
+      balEl.textContent = balNum > 0.00001 ? `${balNum.toFixed(5)} ETH` : '0 ETH';
+      balEl.className = 'bal';
+      if (result.raw > 0n) activeCount++;
+      totalBalance += result.raw;
+    }
+  }
+
+  badge.textContent = activeCount > 0 ? `${activeCount}/${wallets.length} active` : '0 active';
+  badge.className = activeCount > 0 ? 'badge' : 'badge idle';
+
+  return { activeCount, totalBalance };
+}
+
+async function refreshAll() {
+  const btn = document.getElementById('refreshBtn');
+  btn.textContent = 'Refreshing...';
+  btn.disabled = true;
+
+  const grid = document.getElementById('networkGrid');
+  const hasWallets = Object.values(allWallets).some(w => w && w.length > 0);
+
+  if (!hasWallets) {
+    grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><p>No wallets loaded. Go to the <strong>Wallets</strong> tab to upload your wallet files.</p></div>';
+    btn.textContent = 'Refresh All';
+    btn.disabled = false;
+    return;
+  }
+
+  // Render network cards
+  grid.innerHTML = '';
+  for (const network of NETWORKS) {
+    const wallets = allWallets[network.id];
+    if (!wallets || !wallets.length) continue;
+
+    const card = document.createElement('div');
+    card.className = 'network-card';
+    card.id = `card-${network.id}`;
+    card.innerHTML = `
+      <div class="network-header">
+        <h2 style="color:${network.color}">${network.name}</h2>
+        <span class="badge idle" id="badge-${network.id}">Loading...</span>
+      </div>
+      <div id="wlist-${network.id}">
+        ${wallets.map((w, i) => `
+          <div class="wallet-row" onclick="showQR('${w.address}')" title="${w.address}">
+            <span class="index">#${i+1}</span>
+            <span class="addr">${w.address.slice(0,6)}...${w.address.slice(-4)}</span>
+            <span class="bal loading" id="bal-${network.id}-${i}">--</span>
+          </div>
+        `).join('')}
+      </div>
+    `;
+    grid.appendChild(card);
+  }
+
+  // Fetch balances
+  let totalWallets = 0, totalWithBal = 0, totalEth = 0n, activeNets = 0;
+
+  for (const network of NETWORKS) {
+    const result = await refreshNetwork(network);
+    if (result) {
+      totalWallets += (allWallets[network.id] || []).length;
+      totalWithBal += result.activeCount;
+      totalEth += result.totalBalance;
+      if (result.activeCount > 0) activeNets++;
+    }
+  }
+
+  document.getElementById('totalWallets').textContent = totalWallets;
+  document.getElementById('totalWithBalance').textContent = totalWithBal;
+  document.getElementById('totalBalance').textContent = parseFloat(ethers.formatEther(totalEth)).toFixed(4);
+  document.getElementById('networksActive').textContent = `${activeNets}/3`;
+
+  btn.textContent = 'Refresh All';
+  btn.disabled = false;
+}
+
+// ========== EXPORT TAB ==========
+function renderExport() {
+  const container = document.getElementById('exportContent');
+  const hasWallets = Object.values(allWallets).some(w => w && w.length > 0);
+
+  if (!hasWallets) {
+    container.innerHTML = '<div class="empty-state"><div class="big-icon">&#128230;</div><p>No wallets loaded. Upload wallets first in the <strong>Wallets</strong> tab.</p></div>';
+    return;
+  }
+
+  let allAddresses = [];
+  for (const network of NETWORKS) {
+    const wallets = allWallets[network.id];
+    if (!wallets || !wallets.length) continue;
+    for (const w of wallets) {
+      allAddresses.push({ address: w.address, network: network.name, privateKey: w.privateKey });
+    }
+  }
+
+  const addressText = allAddresses.map(a => `${a.network}: ${a.address}`).join('\n');
+  const csvText = 'Network,Address,PrivateKey\n' + allAddresses.map(a => `${a.network},${a.address},${a.privateKey}`).join('\n');
+  const jsonText = JSON.stringify(allWallets, null, 2);
+
+  container.innerHTML = `
+    <div class="select-all-bar">
+      <label><input type="checkbox" id="includeKeys" onchange="renderExport()"> Include private keys in export</label>
+      <span style="color:#445;font-size:0.75rem;margin-left:1rem;">${allAddresses.length} addresses total</span>
+    </div>
+    <div class="wallet-list">
+      ${allAddresses.map(a => `
+        <div class="wallet-item">
+          <div>
+            <span class="network-tag" style="background:${NETWORKS.find(n=>n.name===a.network)?.color}22;color:${NETWORKS.find(n=>n.name===a.network)?.color}">${a.network}</span>
+            <span class="waddr" onclick="showQR('${a.address}')" style="cursor:pointer">${a.address}</span>
+          </div>
+          <div class="actions">
+            <button class="btn btn-sm btn-outline" onclick="copyText('${a.address}')">Copy</button>
+            <button class="btn btn-sm btn-outline" onclick="showQR('${a.address}')">QR</button>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+    <div style="margin-top:2rem;display:flex;gap:1rem;flex-wrap:wrap">
+      <button class="btn" onclick="copyText(document.getElementById('includeKeys').checked ? '${csvText.replace(/'/g, "\\'")}' : '${addressText.replace(/'/g, "\\'")}')">Copy Addresses</button>
+      <button class="btn btn-outline" onclick="downloadFile('addresses.txt', document.getElementById('includeKeys').checked ? '${csvText.replace(/'/g, "\\'")}' : '${addressText.replace(/'/g, "\\'")}')">Download TXT</button>
+      <button class="btn btn-outline" onclick="downloadFile('wallets.json', '${jsonText.replace(/'/g, "\\'").replace(/\n/g, '\\n')}')">Download JSON</button>
+    </div>
+  `;
+}
+
+function copyText(text) {
+  navigator.clipboard.writeText(text).then(() => showToast('Copied!')).catch(() => {
+    // Fallback
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    showToast('Copied!');
+  });
+}
+
+function downloadFile(filename, content) {
+  const blob = new Blob([content], { type: 'text/plain' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+// ========== SCROLL TO TOP ==========
+window.addEventListener('scroll', () => {
+  document.getElementById('scrollTopBtn').style.display = window.scrollY > 400 ? 'flex' : 'none';
+});
+
+// ========== INIT ==========
+loadFromStorage();
+renderStoredWallets();
+if (Object.values(allWallets).some(w => w && w.length > 0)) {
+  refreshAll();
+}
+</script>
+</body>
+</html>
