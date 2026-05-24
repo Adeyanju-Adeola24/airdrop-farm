@@ -25,6 +25,8 @@ function loadOrCreateWallets(walletFile, count) {
   }
   console.log(`  Generating ${count} wallets...`);
   const wallets = generateWallets(count);
+  const dir = walletFile.substring(0, walletFile.lastIndexOf('/'));
+  if (dir) fs.mkdirSync(dir, { recursive: true });
   fs.writeFileSync(walletFile, JSON.stringify(wallets, null, 2));
   console.log(`  Saved to ${walletFile}`);
   return wallets;
