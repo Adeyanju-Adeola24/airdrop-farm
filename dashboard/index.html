@@ -323,9 +323,13 @@
     <div class="stat-card"><div class="value" id="totalBalance">0.00</div><div class="label">Total ETH</div></div>
     <div class="stat-card"><div class="value" id="networksActive">0/3</div><div class="label">Networks Active</div></div>
   </div>
+  <div style="text-align:center;margin-bottom:1rem;display:flex;gap:0.5rem;flex-wrap:wrap;justify-content:center">
+    <button class="btn btn-sm" onclick="loadPublicWallets()">&#128279; Load Public Wallets</button>
+    <span style="color:#445;font-size:0.75rem;display:flex;align-items:center">Auto-loads 100 wallets from GitHub (public addresses only)</span>
+  </div>
   <div class="network-grid" id="networkGrid">
     <div class="empty-state" style="grid-column:1/-1">
-      <p>No wallets loaded. Go to the <strong>Wallets</strong> tab to upload your wallet files.</p>
+      <p>Tap <strong>Load Public Wallets</strong> above to see all 100 wallets instantly.</p>
     </div>
   </div>
 </div>
@@ -677,11 +681,12 @@ function renderStoredWallets() {
       </div>`;
     for (let i = 0; i < Math.min(wallets.length, 20); i++) {
       const w = wallets[i];
-      const pkShort = w.privateKey.slice(0, 10) + '...' + w.privateKey.slice(-4);
+      const hasKey = w.privateKey && w.privateKey.length > 10;
+      const pkShort = hasKey ? w.privateKey.slice(0, 10) + '...' : '';
       html += `<div class="wallet-row" onclick="showQR('${w.address}')" title="Click for QR code">
         <span class="index">#${i+1}</span>
         <span class="addr">${w.address.slice(0,6)}...${w.address.slice(-4)}</span>
-        <span class="key-display">${pkShort}</span>
+        <span class="key-display">${hasKey ? pkShort : 'public only'}</span>
         <span style="font-size:0.7rem;color:#445">QR</span>
       </div>`;
     }
@@ -890,6 +895,28 @@ function downloadFile(filename, content) {
   a.download = filename;
   a.click();
   URL.revokeObjectURL(a.href);
+}
+
+// ========== PUBLIC WALLETS ==========
+async function loadPublicWallets() {
+  const btn = event?.target || document.querySelector('.btn');
+  btn.textContent = 'Loading...';
+  btn.disabled = true;
+
+  try {
+    const resp = await fetch('https://raw.githubusercontent.com/Adeyanju-Adeola24/airdrop-farm/main/wallets/public-addresses.json');
+    const data = await resp.json();
+    allWallets = data;
+    saveToStorage();
+    renderStoredWallets();
+    showToast('Loaded 100 public wallets!');
+    await refreshAll();
+  } catch (e) {
+    showToast('Failed to load wallets: ' + e.message, true);
+  }
+
+  btn.textContent = 'Load Public Wallets';
+  btn.disabled = false;
 }
 
 // ========== SCROLL TO TOP ==========
