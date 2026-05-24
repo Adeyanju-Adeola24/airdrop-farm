@@ -309,6 +309,8 @@
   <div class="tab" data-tab="wallets">Wallets</div>
   <div class="tab" data-tab="faucets">Faucets & Info</div>
   <div class="tab" data-tab="export">Export</div>
+  <div class="tab" data-tab="airdrops">Airdrops</div>
+  <div class="tab" data-tab="mining">Mining</div>
 </div>
 
 <div class="container">
@@ -396,9 +398,105 @@
   </div>
 </div>
 
+<!-- ============ TAB 5: Airdrops ============ -->
+<div class="tab-content" id="tab-airdrops" style="border-top: none;">
+  <div class="stats-row">
+    <div class="stat-card"><div class="value">Scroll</div><div class="label">No date yet — testnet active</div></div>
+    <div class="stat-card"><div class="value">Base</div><div class="label">69% chance of token by Dec 2026</div></div>
+    <div class="stat-card"><div class="value">Monad</div><div class="label" style="color:#f87171">AIRDROP DONE (Oct 2025) — missed</div></div>
+  </div>
+
+  <div class="network-grid">
+    <div class="network-card">
+      <div class="network-header"><h2 style="color:#00d4ff">Scroll</h2></div>
+      <div style="padding:1.25rem;font-size:0.85rem;line-height:1.7">
+        <p><strong>Status:</strong> zkEVM L2 with confirmed plans to airdrop</p>
+        <p><strong>TVL:</strong> Growing rapidly</p>
+        <p><strong>What to do:</strong> Make transactions on Scroll Sepolia testnet</p>
+        <p><strong>Potential value:</strong> Medium-High (similar to zkSync's airdrop)</p>
+        <p><strong>Timeline:</strong> Probably 2026</p>
+      </div>
+    </div>
+
+    <div class="network-card">
+      <div class="network-header"><h2 style="color:#0052ff">Base</h2></div>
+      <div style="padding:1.25rem;font-size:0.85rem;line-height:1.7">
+        <p><strong>Status:</strong> Coinbase exploring token. NOT confirmed.</p>
+        <p><strong>TVL:</strong> $15B (biggest L2)</p>
+        <p><strong>What to do:</strong> Bridge ETH, trade on Aerodrome/Uniswap, provide liquidity</p>
+        <p><strong>Potential value:</strong> Very High if token launches</p>
+        <p><strong>Timeline:</strong> Possibly Q2-Q4 2026</p>
+      </div>
+    </div>
+
+    <div class="network-card">
+      <div class="network-header"><h2 style="color:#7b2ff7">Monad &#10060;</h2></div>
+      <div style="padding:1.25rem;font-size:0.85rem;line-height:1.7">
+        <p><strong>Status:</strong> Airdrop ALREADY HAPPENED (Oct-Nov 2025)</p>
+        <p><strong>Distribution:</strong> 3.33B MON tokens (~$105M at launch)</p>
+        <p><strong>MON Price:</strong> Currently ~$0.023-0.03</p>
+        <p><strong>Too late:</strong> We missed this one. Testnet farming won't help.</p>
+        <p style="color:#f87171;margin-top:0.5rem"><strong>Lesson:</strong> Check airdrop timelines BEFORE farming!</p>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-top:2rem;background:#0e0e1e;border:1px solid #1a2a4a;border-radius:12px;padding:1.5rem;font-size:0.85rem">
+    <h3 style="margin-bottom:0.75rem">Other Live Airdrops on Base</h3>
+    <ul style="color:#667;line-height:2">
+      <li><strong>RollX ($ROLL)</strong> — Perp DEX on Base. Wave 2: 80M $ROLL at ~$0.068.</li>
+      <li><strong>Based ($BASED)</strong> — Omnichannel trading. Airdropped Mar 2026 to Hyperliquid wallets.</li>
+    </ul>
+    <p style="color:#445;margin-top:0.75rem;font-size:0.75rem">Last updated: May 2026. Always DYOR (Do Your Own Research).</p>
+  </div>
 </div>
 
-<div class="toast" id="toast"></div>
+<!-- ============ TAB 6: Mining ============ -->
+<div class="tab-content" id="tab-mining" style="border-top: none;">
+  <div class="stats-row">
+    <div class="stat-card"><div class="value" style="font-size:1rem">sepolia-faucet.pk910.de</div><div class="label">PoW Faucet</div></div>
+    <div class="stat-card"><div class="value" id="miningAddr">Loading...</div><div class="label">Wallet Being Funded</div></div>
+  </div>
+
+  <div class="network-grid">
+    <div class="faucet-card" style="background:#0e0e1e;border:1px solid #1a2a4a;border-radius:12px;padding:1.5rem">
+      <h3 style="color:#00d4ff;margin-bottom:0.75rem">PoW Faucet - Scroll Sepolia</h3>
+      <p style="color:#667;font-size:0.85rem;margin-bottom:0.75rem">
+        Mine Sepolia ETH using your phone's browser. No account needed.
+        Once you claim, we bridge it to Scroll Sepolia and split to all wallets.
+      </p>
+      <ol style="color:#667;font-size:0.8rem;line-height:1.8;padding-left:1.25rem">
+        <li>Open <a href="https://sepolia-faucet.pk910.de" target="_blank" style="color:#00d4ff">sepolia-faucet.pk910.de</a></li>
+        <li>Paste your wallet address</li>
+        <li>Wait until 0.05+ SepETH</li>
+        <li>Tap Claim</li>
+        <li>Come back here — I'll help you bridge &amp; split</li>
+      </ol>
+    </div>
+
+    <div class="faucet-card" style="background:#0e0e1e;border:1px solid #1a2a4a;border-radius:12px;padding:1.5rem">
+      <h3 style="color:#0052ff;margin-bottom:0.75rem">Getting Test ETH for Base</h3>
+      <p style="color:#667;font-size:0.85rem;margin-bottom:0.75rem">
+        Base uses Base Sepolia (separate from Sepolia ETH).
+      </p>
+      <ul style="color:#667;font-size:0.8rem;line-height:1.8;padding-left:1.25rem">
+        <li>Alchemy Faucet: alchemy.com/faucets/base-sepolia</li>
+        <li>QuickNode: faucet.quicknode.com/base/sepolia</li>
+        <li>Both need small mainnet ETH balance</li>
+      </ul>
+    </div>
+
+    <div class="faucet-card" style="background:#0e0e1e;border:1px solid #1a2a4a;border-radius:12px;padding:1.5rem">
+      <h3 style="color:#7b2ff7;margin-bottom:0.75rem">Getting Test ETH for Monad</h3>
+      <p style="color:#667;font-size:0.85rem">
+        Monad's airdrop already happened, so farming Monad testnet is no longer urgent.
+        Still, if you want to monitor: <a href="https://faucet.monad.xyz" target="_blank" style="color:#7b2ff7">faucet.monad.xyz</a>
+      </p>
+    </div>
+  </div>
+</div>
+
+</div>
 
 <div class="qr-overlay" id="qrOverlay" onclick="closeQR()">
   <div class="qr-box" onclick="event.stopPropagation()">
