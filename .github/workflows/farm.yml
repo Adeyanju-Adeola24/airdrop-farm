@@ -1,0 +1,30 @@
+name: Airdrop Farm
+on:
+  workflow_dispatch:
+    inputs:
+      network:
+        description: 'Testnet to farm (all, scroll, base, monad)'
+        required: true
+        default: 'all'
+jobs:
+  farm:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install
+      - run: |
+          case "${{ github.event.inputs.network }}" in
+            scroll) node scroll.js ;;
+            base)   node base.js ;;
+            monad)  node monad.js ;;
+            *)      bash farm-all.sh ;;
+          esac
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: wallets
+          path: wallets/
+          retention-days: 90
