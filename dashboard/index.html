@@ -403,7 +403,9 @@
   <div class="stats-row">
     <div class="stat-card"><div class="value">Scroll</div><div class="label">No date yet — testnet active</div></div>
     <div class="stat-card"><div class="value">Base</div><div class="label">69% chance of token by Dec 2026</div></div>
-    <div class="stat-card"><div class="value">Monad</div><div class="label" style="color:#f87171">AIRDROP DONE (Oct 2025) — missed</div></div>
+    <div class="stat-card"><div class="value">Linea</div><div class="label">ConsenSys zkEVM — likely airdrop</div></div>
+    <div class="stat-card"><div class="value">Berachain</div><div class="label">Highly hyped L1 — testnet active</div></div>
+    <div class="stat-card"><div class="value">Monad</div><div class="label" style="color:#f87171">AIRDROP DONE — missed</div></div>
   </div>
 
   <div class="network-grid">
@@ -437,6 +439,28 @@
         <p><strong>MON Price:</strong> Currently ~$0.023-0.03</p>
         <p><strong>Too late:</strong> We missed this one. Testnet farming won't help.</p>
         <p style="color:#f87171;margin-top:0.5rem"><strong>Lesson:</strong> Check airdrop timelines BEFORE farming!</p>
+      </div>
+    </div>
+
+    <div class="network-card">
+      <div class="network-header"><h2 style="color:#65e09a">Linea</h2></div>
+      <div style="padding:1.25rem;font-size:0.85rem;line-height:1.7">
+        <p><strong>Status:</strong> ConsenSys zkEVM — actively developed, airdrop likely</p>
+        <p><strong>Backed by:</strong> ConsenSys (MetaMask, Infura parent)</p>
+        <p><strong>What to do:</strong> Make transactions on Linea Sepolia testnet</p>
+        <p><strong>Potential value:</strong> Very High (similar to Scroll)</p>
+        <p><strong>Timeline:</strong> Probably 2026</p>
+      </div>
+    </div>
+
+    <div class="network-card">
+      <div class="network-header"><h2 style="color:#fc6c4c">Berachain &#128293;</h2></div>
+      <div style="padding:1.25rem;font-size:0.85rem;line-height:1.7">
+        <p><strong>Status:</strong> Proof-of-Liquidity L1 — testnet bArtio active</p>
+        <p><strong>Backed by:</strong> $42M raised (Polychain, Framework)</p>
+        <p><strong>What to do:</strong> Interact with Berachain bArtio testnet</p>
+        <p><strong>Potential value:</strong> Very High — one of the most hyped L1s</p>
+        <p><strong>Timeline:</strong> Mainnet launched — airdrop may still be possible</p>
       </div>
     </div>
   </div>
@@ -515,6 +539,8 @@ const NETWORKS = [
   { id: 'scroll',  name: 'Scroll',  rpc: 'https://sepolia-rpc.scroll.io',   chainId: 534351, color: '#00d4ff', explorer: 'https://sepolia.scrollscan.com/address/' },
   { id: 'base',    name: 'Base',    rpc: 'https://sepolia.base.org',          chainId: 84532,  color: '#0052ff', explorer: 'https://sepolia.basescan.org/address/' },
   { id: 'monad',   name: 'Monad',   rpc: 'https://testnet-rpc.monad.xyz',    chainId: 10143,  color: '#7b2ff7', explorer: 'https://testnet.monadexplorer.com/address/' },
+  { id: 'linea',   name: 'Linea',   rpc: 'https://rpc.sepolia.linea.build',   chainId: 59141,  color: '#65e09a', explorer: 'https://sepolia.lineascan.build/address/' },
+  { id: 'berachain', name: 'Berachain', rpc: 'https://bartio.rpc.berachain.com', chainId: 80084, color: '#fc6c4c', explorer: 'https://bartio.beratrail.io/address/' },
 ];
 
 // ========== STATE ==========

@@ -20,6 +20,20 @@ const configs = {
     faucetUrl: null,
     walletFile: './wallets/monad-wallets.json',
   },
+  linea: {
+    name: 'Linea',
+    rpcUrl: 'https://rpc.sepolia.linea.build',
+    chainId: 59141,
+    faucetUrl: null,
+    walletFile: './wallets/linea-wallets.json',
+  },
+  berachain: {
+    name: 'Berachain',
+    rpcUrl: 'https://bartio.rpc.berachain.com',
+    chainId: 80084,
+    faucetUrl: null,
+    walletFile: './wallets/berachain-wallets.json',
+  },
 };
 
 module.exports = configs;

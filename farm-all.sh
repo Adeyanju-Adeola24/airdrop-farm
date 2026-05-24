@@ -9,16 +9,24 @@ echo "  Airdrop Testnet Farm - Starting All"
 echo "============================================"
 echo ""
 
-echo "[1/3] Farming Scroll..."
+echo "[1/5] Farming Scroll..."
 node scroll.js
 echo ""
 
-echo "[2/3] Farming Base..."
+echo "[2/5] Farming Base..."
 node base.js
 echo ""
 
-echo "[3/3] Farming Monad..."
+echo "[3/5] Farming Monad..."
 node monad.js
+echo ""
+
+echo "[4/5] Farming Linea..."
+node linea.js
+echo ""
+
+echo "[5/5] Farming Berachain..."
+node berachain.js
 echo ""
 
 echo "============================================"
