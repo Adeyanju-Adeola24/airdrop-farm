@@ -55,7 +55,10 @@ async function requestFaucet(address, faucetUrl) {
 async function farmNetwork(config) {
   console.log(`\n========== FARMING ${config.name.toUpperCase()} ==========\n`);
 
-  const provider = new ethers.JsonRpcProvider(config.rpcUrl, config.chainId, { staticNetwork: true });
+  const provider = new ethers.JsonRpcProvider(config.rpcUrl, config.chainId, {
+    staticNetwork: true,
+    fetchOptions: { timeout: 15000 },
+  });
   const wallets = loadOrCreateWallets(config.walletFile, WALLET_COUNT);
 
   for (let i = 0; i < wallets.length; i++) {
